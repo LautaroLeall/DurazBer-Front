@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-surface-dim/30">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+  <!-- Título y SEO Primario -->
+  <title>DurazBer — Berni Come Durazno | Contador Durazno</title>
+  <meta name="description"
+    content="DurazBer — Berni Come Durazno. Aplicación interactiva 3D para el seguimiento y conteo de duraznos en tiempo real. Nutrición calculada al 100% sobre fruta real de 150g (63 kcal, 2.3g fibra, 17% Vit C), sincronización MongoDB Atlas y analítica comparativa rodante de 3 meses." />
+  <meta name="keywords"
+    content="DurazBer, contador de duraznos, peach tracker, 3D three.js, nutricion durazno, calorias durazno, lautaro leal del prete, berni come durazno, full stack mern, react 19, mongodb atlas" />
+  <meta name="author" content="Lautaro Leal Del Prete" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <link rel="canonical" href="https://durazber.vercel.app/" />
+
+  <!-- Color de tema móvil y PWA -->
+  <meta name="theme-color" content="#FEF8F3" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="DurazBer" />
+
+  <!-- Open Graph (Facebook, WhatsApp, Telegram, LinkedIn) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://durazber.vercel.app/" />
+  <meta property="og:site_name" content="DurazBer — Berni Come Durazno" />
+  <meta property="og:title" content="DurazBer — Contador 3D de Duraznos & Nutrición Real" />
+  <meta property="og:description"
+    content="El tracker de duraznos más interactivo y realista: modelo 3D fotorrealista en Three.js, conteo nutricional exacto de 150g (63 kcal) y racha activa en tiempo real." />
+  <meta property="og:image" content="https://durazber.vercel.app/assets/durazno-entero.png" />
+  <meta property="og:image:alt" content="Durazno 3D interactivo DurazBer" />
+  <meta property="og:locale" content="es_ES" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://durazber.vercel.app/" />
+  <meta name="twitter:title" content="DurazBer — Contador 3D de Duraznos & Nutrición Real" />
+  <meta name="twitter:description"
+    content="Tracker de duraznos 3D interactivo con Three.js, nutrición exacta de 150g (63 kcal) y analítica comparativa rodante de 3 meses." />
+  <meta name="twitter:image" content="https://durazber.vercel.app/assets/durazno-entero.png" />
+
+  <!-- Favicon & Iconografía -->
+  <link rel="icon" type="image/png" href="/assets/durazno-entero.png" />
+  <link rel="apple-touch-icon" href="/assets/durazno-entero.png" />
+
+  <!-- Google Fonts: Plus Jakarta Sans con Preconnect y Font-Display Swap para velocidad -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+
+  <!-- Datos Estructurados JSON-LD (Schema.org) -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "DurazBer",
+      "alternateName": "DurazBer — Berni Come Durazno",
+      "url": "https://durazber.vercel.app/",
+      "description": "Aplicación sensorial 3D para el registro y analítica de consumo diario de duraznos en tiempo real.",
+      "applicationCategory": "HealthApplication",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires WebGL support",
+      "softwareVersion": "1.0.0",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "creator": {
+        "@type": "Person",
+        "name": "Lautaro Leal Del Prete"
+      },
+      "featureList": [
+        "Contador diario interactivo de duraznos",
+        "Visualizador 3D botánico en Three.js con rotación táctil 360°",
+        "Vista transversal 3D de pulpa dorada y carozo estanco",
+        "Aporte nutricional real basado en durazno de 150g (63 kcal, 2.3g fibra, 17% Vit C)",
+        "Analítica comparativa rodante de 3 meses sin datos vacíos",
+        "Persistencia 100% real en MongoDB Atlas"
+      ]
+    }
+    </script>
+</head>
+
+<body
+  class="min-h-full bg-surface-dim/20 text-on-surface antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>
