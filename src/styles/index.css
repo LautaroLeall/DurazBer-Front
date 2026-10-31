@@ -3,9 +3,32 @@
 @tailwind utilities;
 
 @layer base {
+
+  html,
   body {
     @apply font-body bg-background text-on-surface antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior-y: none;
+    overflow-x: hidden;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
   }
 
   h1,
@@ -16,6 +39,15 @@
   }
 }
 
+/* Soporte para áreas seguras en iPhone (Dynamic Island / Notch / Barra inferior) */
+.safe-top {
+  padding-top: max(0.875rem, env(safe-area-inset-top));
+}
+
+.safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
 /* Ocultar barra de desplazamiento manteniendo el scroll táctil */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -24,6 +56,7 @@
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Sombras y resplandores táctiles estilo Velvet Orchard */
@@ -41,10 +74,12 @@
 
 /* Animaciones suaves */
 @keyframes peachPulse {
+
   0%,
   100% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.05);
   }
@@ -58,6 +93,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -68,15 +104,20 @@
 }
 
 @keyframes peachChomp {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1) rotate(0deg);
   }
+
   35% {
     transform: scale(1.18) rotate(-8deg);
   }
+
   50% {
     transform: scale(0.88) rotate(4deg);
   }
+
   70% {
     transform: scale(1.06) rotate(-2deg);
   }
@@ -87,9 +128,12 @@
 }
 
 @keyframes peachFloat {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px) rotate(0deg);
   }
+
   50% {
     transform: translateY(-8px) rotate(6deg);
   }
