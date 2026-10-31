@@ -18,12 +18,13 @@ const client = axios.create({
   timeout: 15000
 });
 
-// Interceptor para inyectar token JWT automáticamente
+// Interceptor para inyectar token JWT y zona horaria local automáticamente
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem('durazber_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  config.headers['x-timezone-offset'] = String(new Date().getTimezoneOffset());
   return config;
 }, (error) => Promise.reject(error));
 
@@ -31,9 +32,10 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && !error.config.url.includes('/auth/login')) {
+    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/login')) {
       localStorage.removeItem('durazber_token');
       localStorage.removeItem('durazber_user');
+      localStorage.removeItem('durazber_summary_cache');
       window.dispatchEvent(new Event('durazber_auth_expired'));
     }
     return Promise.reject(error);
@@ -67,6 +69,7 @@ export const api = {
     } catch { }
     localStorage.removeItem('durazber_token');
     localStorage.removeItem('durazber_user');
+    localStorage.removeItem('durazber_summary_cache');
   },
 
   getProfile: async () => {
