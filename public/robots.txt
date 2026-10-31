@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://durazber.vercel.app/sitemap.xml
+Sitemap: https://duraz-ber.vercel.app/sitemap.xml
