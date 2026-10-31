@@ -1,36 +1,46 @@
-# DurazBer - Frontend 🍑✨
+# DurazBer — Frontend 3D & PWA 🍑✨
 
-Frontend fotorrealista e interactivo de **DurazBer**, la aplicación de seguimiento de consumo botánico de duraznos con renderizado 3D en tiempo real, desglose nutricional y analítica diaria.
+Interfaz interactiva 3D y Aplicación Web Progresiva (PWA) de **DurazBer (Berni Come Durazno)** para el seguimiento diario de consumo de duraznos en tiempo real, cálculo nutricional exacto sobre fruta fresca de 150g y analítica comparativa de 3 meses.
+
+🌐 **Demo en Vivo (Vercel):** [https://duraz-ber.vercel.app](https://duraz-ber.vercel.app)  
+🔗 **Backend API (Render):** [https://durazber-back.onrender.com](https://durazber-back.onrender.com)
 
 ---
 
 ## 🌟 Características Principales
 
-- **Visor 3D Botánico Hiperrealista (Three.js WebGL):**
-  - **ENTERO:** Durazno botánico 360° con morfología orgánica, cavidad peduncular, sutura carpelar, textura procedural aterciopelada y gotas de rocío.
-  - **CAROZO:** Sección transversal con mesocarpo jugoso (pulpa estriada) y endocarpo esculpido (carozo 3D) con deslizador de extracción interactiva.
-  - **DUAL:** Comparativa lado a lado en un solo espacio 3D.
-  - **Interacción fluida:** Rotación 360° suave con 1 dedo o mouse, zoom con dos dedos (pinch) o rueda.
-- **Contador Diario de Cosecha:** Anillo de progreso SVG reactivo con botón táctil de incremento optimista (+1, +2, -1) y desglose de macros (kcal, fibra, vitamina C, hidratación).
-- **Historial y Racha:** Registro cronológico de consumo, estadísticas de rachas consecutivas y filtros de consulta.
-- **Analítica Visual:** Gráficos de tendencias semanales y mensuales de consumo de duraznos.
-- **Diseño Responsivo:** Paleta cromática Material Design 3 inspirada en tonos de durazno, damasco y terracota, con soporte completo para móviles y escritorio.
-- **Loader de Entrada:** Pantalla de bienvenida coordinada que asegura que la escena WebGL y los datos de base de datos estén 100% listos antes de interactuar.
+- **Visor 3D Botánico 360° en Tiempo Real (Three.js WebGL):**
+  - **ENTERO:** Morfología botánica orgánica con cavidad peduncular, sutura carpelar, textura procedural aterciopelada y gotas de rocío optimizadas a 60 FPS.
+  - **CAROZO:** Corte transversal con mesocarpo jugoso (pulpa radiada) y endocarpo esculpido (carozo 3D con surcos profundos).
+  - **DUAL:** Comparativa simultánea de fruta entera y corte transversal en el mismo espacio 3D.
+  - **Control Táctil y Mouse Limpio:** Rotación libre de 360° con 1 dedo o mouse, zoom con pellizco (_pinch-to-zoom_) o rueda exclusivamente dentro del lienzo 3D, selector rápido de 6 ángulos y pausa automática de GPU cuando el visor no está en pantalla (`IntersectionObserver`).
+- **App Nativa Instalable (PWA iOS, Android y Desktop):**
+  - Incluye `manifest.webmanifest` y Service Worker (`sw.js`) con caché inteligente para carga instantánea.
+  - Botón directo **"Instalar App"** en la barra superior y en Perfil, con guía paso a paso integrada para Safari en iPhone/iPad (_Compartir → Agregar a inicio_).
+- **Experiencia 100% Optimizada para Celular (iOS & Android):**
+  - Prevención total de auto-zoom en inputs de iOS Safari (`16px`), bloqueo de zoom por doble toque en botones de conteo (`touch-action: manipulation`) y soporte completo de `safe-area-inset` para iPhone con Notch / Dynamic Island.
+- **Contador Diario en Tiempo Real (Cero Recargas):**
+  - Botones de acción rápida (`+1`, `+2`, `-1`) con actualización optimista inmediata y cola secuencial de peticiones que evita condiciones de carrera.
+  - Sincronización automática de **Historial** y **Analítica** al modificar el contador o al volver a abrir la app (`visibilitychange` / `focus`).
+- **Nutrición Real (Base 150g por unidad):**
+  - Cálculo dinámico de **63 kcal**, **2.3g de fibra**, **17% VD de Vitamina C** y **134ml de bio-hidratación** por cada durazno registrado.
+- **Analítica Rodante de 3 Meses y Exportación CSV:**
+  - Gráfico semanal de cumplimiento de meta, comparativa trimestral y descarga directa del historial completo en `.CSV`.
 
 ---
 
-## 🛠️ Tecnologías
+## 🛠️ Stack Tecnológico
 
-- **Framework:** [React 18](https://react.dev/) + [Vite 6](https://vitejs.dev/)
-- **3D Engine:** [Three.js](https://threejs.org/)
-- **Estilos:** [Tailwind CSS](https://tailwindcss.com/) + Material Theme Tokens
-- **Iconografía:** [Lucide React](https://lucide.dev/)
-- **Enrutamiento:** [React Router v6](https://reactrouter.com/)
-- **Cliente HTTP:** Fetch API nativo con interceptores de autenticación y renovación de sesión.
+- **Framework UI:** [React 19](https://react.dev/) + [Vite 6](https://vitejs.dev/)
+- **Motor Gráfico 3D:** [Three.js (`^0.170.0`)](https://threejs.org/)
+- **Estilos y Diseño:** [Tailwind CSS 3](https://tailwindcss.com/) + Material Design 3 Tokens
+- **Enrutamiento:** [React Router v7](https://reactrouter.com/)
+- **Cliente HTTP:** [Axios](https://axios-http.com/) con normalización automática de `/api`, interceptor JWT y cabecera `x-timezone-offset`
+- **Iconografía y Efectos:** [Lucide React](https://lucide.dev/) + `canvas-confetti`
 
 ---
 
-## 🚀 Instalación y Ejecución
+## 🚀 Instalación y Ejecución Local
 
 ```bash
 # 1. Clonar el repositorio
@@ -41,18 +51,31 @@ cd DurazBer-Front
 npm install
 
 # 3. Configurar variables de entorno
-# Copiar .env.example a .env
 cp .env.example .env
 
-# 4. Iniciar servidor de desarrollo
+# 4. Iniciar servidor de desarrollo (http://localhost:5173)
 npm run dev
 
 # 5. Compilar para producción
 npm run build
+
+# 6. Previsualizar build de producción localmente
+npm run preview
+```
+
+---
+
+## ⚙️ Variables de Entorno (`.env`)
+
+Crear un archivo `.env` en la raíz de `frontend` basado en `.env.example`:
+
+```env
+# URL del Backend (el cliente normaliza automáticamente el sufijo /api)
+VITE_API_URL=http://localhost:5000/api
 ```
 
 ---
 
 ## 📄 Licencia
 
-Desarrollado con dedicación por **Lautaro Leal Del Prete**. Todos los derechos reservados.
+Desarrollado por **Lautaro Leal Del Prete (LLDP)**. Todos los derechos reservados.
