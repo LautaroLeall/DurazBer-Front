@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import {
   RotateCcw,
@@ -124,8 +124,8 @@ let cachedPulpTextures = null;
 let cachedCarozoTextures = null;
 
 function createPeachSkinTextures() {
-  const width = 512;
-  const height = 512;
+  const width = 384;
+  const height = 384;
 
   const colorCanvas = document.createElement('canvas');
   colorCanvas.width = width;
@@ -253,7 +253,7 @@ function createPeachSkinTextures() {
 }
 
 function createCutPulpTextures() {
-  const size = 512;
+  const size = 384;
   const colorCanvas = document.createElement('canvas');
   colorCanvas.width = size;
   colorCanvas.height = size;
@@ -413,7 +413,7 @@ function createCutPulpTextures() {
 }
 
 function createCarozoTextures() {
-  const size = 512;
+  const size = 384;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -509,7 +509,7 @@ function getCachedTextures() {
 function buildWholePeachMesh(skinMaterial) {
   const group = new THREE.Group();
 
-  const geo = new THREE.SphereGeometry(1, 96, 96);
+  const geo = new THREE.SphereGeometry(1, 64, 64);
   const pos = geo.attributes.position;
   const v = new THREE.Vector3();
 
@@ -554,8 +554,8 @@ function buildCutPeachGroup(skinMaterial, pulpTextures, carozoTextures) {
   const cutGroup = new THREE.Group();
 
   // A) HEMISFERIO EXTERIOR DE PIEL (z <= 0)
-  const radialSegs = 96;
-  const depthRings = 48;
+  const radialSegs = 64;
+  const depthRings = 36;
   const skinGeo = new THREE.BufferGeometry();
   const skinVertices = [];
   const skinUVs = [];
@@ -804,11 +804,9 @@ function buildDewDropsGroup() {
   const dropMat = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
     roughness: 0.05,
-    metalness: 0.0,
-    transmission: 0.92,
+    metalness: 0.05,
     transparent: true,
-    opacity: 0.88,
-    ior: 1.333,
+    opacity: 0.68,
     clearcoat: 1.0,
     clearcoatRoughness: 0.05
   });
@@ -883,9 +881,8 @@ const Peach3DCanvas = ({ onReady }) => {
       powerPreference: 'high-performance'
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = false;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.14;
 
@@ -1075,12 +1072,17 @@ const Peach3DCanvas = ({ onReady }) => {
       );
     };
 
+    const preventTouchScroll = (e) => {
+      if (e.cancelable) e.preventDefault();
+    };
+
     const domElem = renderer.domElement;
     domElem.style.touchAction = 'none';
     domElem.addEventListener('pointerdown', onPointerDown);
     domElem.addEventListener('pointermove', onPointerMove);
     domElem.addEventListener('pointerup', onPointerUp);
     domElem.addEventListener('pointercancel', onPointerCancel);
+    domElem.addEventListener('touchmove', preventTouchScroll, { passive: false });
     domElem.addEventListener('wheel', onWheel, { passive: false });
 
     const handleResize = () => {
@@ -1093,13 +1095,32 @@ const Peach3DCanvas = ({ onReady }) => {
     };
     window.addEventListener('resize', handleResize);
 
-    // Bucle de renderizado 60 FPS
+    // Bucle de renderizado 60 FPS con ahorro inteligente de batería y GPU
     let reqId;
+    let isCanvasVisible = true;
     const clock = new THREE.Clock();
+
+    const observer =
+      typeof IntersectionObserver !== 'undefined'
+        ? new IntersectionObserver(
+          (entries) => {
+            if (entries[0]) {
+              isCanvasVisible = entries[0].isIntersecting;
+            }
+          },
+          { threshold: 0.05 }
+        )
+        : null;
+
+    if (observer) observer.observe(container);
 
     const animate = () => {
       reqId = requestAnimationFrame(animate);
-      const delta = clock.getDelta();
+
+      // Pausar cálculo y GPU si el visor no está en pantalla o la pestaña está en segundo plano
+      if (!isCanvasVisible || document.hidden) return;
+
+      clock.getDelta();
       const elapsed = clock.getElapsedTime();
 
       const { currentSpherical, targetSpherical } = sceneObjectsRef.current;
@@ -1158,12 +1179,29 @@ const Peach3DCanvas = ({ onReady }) => {
 
     return () => {
       cancelAnimationFrame(reqId);
+      if (observer) observer.disconnect();
       domElem.removeEventListener('pointerdown', onPointerDown);
       domElem.removeEventListener('pointermove', onPointerMove);
       domElem.removeEventListener('pointerup', onPointerUp);
       domElem.removeEventListener('pointercancel', onPointerCancel);
+      domElem.removeEventListener('touchmove', preventTouchScroll);
       domElem.removeEventListener('wheel', onWheel);
       window.removeEventListener('resize', handleResize);
+
+      // Liberar geometrías y materiales de VRAM (conservando las texturas procedurales en caché)
+      scene.traverse((obj) => {
+        if (obj.geometry) {
+          obj.geometry.dispose();
+        }
+        if (obj.material) {
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach((m) => m.dispose());
+          } else {
+            obj.material.dispose();
+          }
+        }
+      });
+      shadowTex.dispose();
       renderer.dispose();
     };
   }, []);
