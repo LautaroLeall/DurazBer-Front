@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, Calendar, Sparkles } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { BarChart3, TrendingUp, Calendar } from 'lucide-react';
 import { api } from '../../services/api';
 
 const MONTH_NAMES = [
@@ -7,52 +7,126 @@ const MONTH_NAMES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
-const getFallbackMonths = () => {
+const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+// Caché en memoria para apertura instantánea (0ms) al cambiar de pestaña
+let cachedWeekly = null;
+let cachedComparative = null;
+
+const getFallbackWeekly = (totalPeachesToday = 0, dailyGoal = 4) => {
+  const now = new Date();
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    const isToday = i === 0;
+    const count = isToday ? totalPeachesToday : 0;
+    days.push({
+      date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+      dayOfWeek: DAY_NAMES[d.getDay()],
+      dayNumber: d.getDate(),
+      count,
+      grams: count * 150,
+      isToday,
+      metGoal: count >= dailyGoal
+    });
+  }
+  return {
+    days,
+    totalWeekly: totalPeachesToday,
+    avgDaily: +(totalPeachesToday / 7).toFixed(1),
+    dailyGoal
+  };
+};
+
+const getFallbackMonths = (totalPeachesToday = 0) => {
   const now = new Date();
   const list = [];
   for (let i = 2; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const isCurrentMonth = i === 0;
+    const count = isCurrentMonth ? totalPeachesToday : 0;
     list.push({
       monthIndex: d.getMonth(),
       monthName: MONTH_NAMES[d.getMonth()],
       year: d.getFullYear(),
       label: `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`,
-      totalPeaches: 0,
-      totalWeightKg: 0,
-      entriesCount: 0,
-      isCurrentMonth: i === 0
+      totalPeaches: count,
+      totalWeightKg: +((count * 150) / 1000).toFixed(2),
+      entriesCount: count > 0 ? 1 : 0,
+      isCurrentMonth
     });
   }
   return list;
 };
 
-const AnalyticsView = ({ refreshTrigger = 0 }) => {
-  const [weeklyData, setWeeklyData] = useState(null);
-  const [comparativeData, setComparativeData] = useState(null);
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState(2); // Selecciona el mes actual por defecto
-  const [loading, setLoading] = useState(true);
+const AnalyticsView = ({
+  totalPeachesToday = 0,
+  dailyGoal = 4,
+  refreshTrigger = 0
+}) => {
+  const [weeklyData, setWeeklyData] = useState(() => cachedWeekly);
+  const [comparativeData, setComparativeData] = useState(() => cachedComparative);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState(2);
 
   useEffect(() => {
+    let isCancelled = false;
+
+    const loadAnalytics = async () => {
+      try {
+        const [weekly, comp] = await Promise.all([
+          api.getWeeklyStats(),
+          api.getThreeMonthComparative()
+        ]);
+        if (isCancelled) return;
+        if (weekly) {
+          cachedWeekly = weekly;
+          setWeeklyData(weekly);
+        }
+        if (comp) {
+          cachedComparative = comp;
+          setComparativeData(comp);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
     loadAnalytics();
+    return () => {
+      isCancelled = true;
+    };
   }, [refreshTrigger]);
 
-  const loadAnalytics = async () => {
-    setLoading(true);
-    try {
-      const [weekly, comp] = await Promise.all([
-        api.getWeeklyStats(),
-        api.getThreeMonthComparative()
-      ]);
-      setWeeklyData(weekly);
-      setComparativeData(comp);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Fusionar en tiempo real el conteo de HOY para que el gráfico responda sin esperar recarga
+  const liveWeekly = useMemo(() => {
+    const base = weeklyData || getFallbackWeekly(totalPeachesToday, dailyGoal);
+    const days = (base.days || []).map((d) => {
+      if (!d.isToday) {
+        return { ...d, metGoal: d.count >= dailyGoal };
+      }
+      return {
+        ...d,
+        count: totalPeachesToday,
+        grams: totalPeachesToday * 150,
+        metGoal: totalPeachesToday >= dailyGoal
+      };
+    });
+    const totalWeekly = days.reduce((acc, item) => acc + (item.count || 0), 0);
+    const avgDaily = +(totalWeekly / 7).toFixed(1);
+    return {
+      ...base,
+      days,
+      totalWeekly,
+      avgDaily,
+      dailyGoal
+    };
+  }, [weeklyData, totalPeachesToday, dailyGoal]);
 
-  const months = comparativeData?.months?.length === 3 ? comparativeData.months : getFallbackMonths();
+  const months =
+    comparativeData?.months?.length === 3
+      ? comparativeData.months
+      : getFallbackMonths(totalPeachesToday);
   const activeMonth = months[selectedMonthIndex] || months[months.length - 1];
 
   return (
@@ -60,7 +134,7 @@ const AnalyticsView = ({ refreshTrigger = 0 }) => {
       {/* 1. Header de Analítica */}
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Métricas Reales</span>
+          <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Métricas en Tiempo Real</span>
           <h1 className="text-xl font-bold text-on-surface font-display">Analítica de Consumo</h1>
         </div>
         <div className="w-9 h-9 rounded-full bg-primary-fixed flex items-center justify-center text-primary shadow-xs">
@@ -75,33 +149,33 @@ const AnalyticsView = ({ refreshTrigger = 0 }) => {
             <TrendingUp className="w-4 h-4 text-primary" />
             <h2 className="text-sm font-bold text-on-surface">Rendimiento Semanal</h2>
           </div>
-          <span className="text-xs font-bold text-secondary bg-secondary-fixed/50 px-2 py-0.5 rounded-full">
-            Prom. {weeklyData?.avgDaily || 0} / día
+          <span className="text-xs font-bold text-secondary bg-secondary-fixed/50 px-2.5 py-0.5 rounded-full">
+            Prom. {liveWeekly.avgDaily} / día
           </span>
         </div>
 
         {/* Gráfico de Barras Semanales */}
         <div className="pt-2">
           <div className="grid grid-cols-7 gap-1.5 items-end h-32 pb-2 border-b border-outline-variant/20">
-            {weeklyData?.days?.map((d, i) => {
-              const maxCount = Math.max(6, ...(weeklyData?.days?.map((item) => item.count) || [6]));
+            {liveWeekly.days.map((d, i) => {
+              const maxCount = Math.max(6, dailyGoal, ...liveWeekly.days.map((item) => item.count || 0));
               const heightPercent = maxCount > 0 ? Math.min(Math.round((d.count / maxCount) * 100), 100) : 0;
 
               return (
-                <div key={i} className="flex flex-col items-center h-full justify-end group">
-                  <span className="text-[10px] font-bold text-on-surface mb-1 group-hover:scale-110 transition-transform">
+                <div key={d.date || i} className="flex flex-col items-center h-full justify-end group">
+                  <span className="text-[10px] font-bold text-on-surface mb-1 transition-transform">
                     {d.count}
                   </span>
                   <div className="w-full bg-surface-container rounded-t-lg overflow-hidden h-20 flex items-end">
                     <div
                       style={{ height: `${Math.max(heightPercent, d.count > 0 ? 12 : 4)}%` }}
-                      className={`w-full rounded-t-lg transition-all duration-500 ${d.isToday
-                          ? 'bg-gradient-to-t from-primary to-primary-container shadow-xs'
-                          : d.metGoal
-                            ? 'bg-secondary'
-                            : d.count > 0
-                              ? 'bg-primary-fixed-dim'
-                              : 'bg-surface-container-high'
+                      className={`w-full rounded-t-lg transition-all duration-300 ${d.isToday
+                        ? 'bg-gradient-to-t from-primary to-primary-container shadow-xs'
+                        : d.metGoal
+                          ? 'bg-secondary'
+                          : d.count > 0
+                            ? 'bg-primary-fixed-dim'
+                            : 'bg-surface-container-high'
                         }`}
                     />
                   </div>
@@ -114,8 +188,8 @@ const AnalyticsView = ({ refreshTrigger = 0 }) => {
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-outline pt-2">
-            <span>Objetivo diario: {weeklyData?.dailyGoal || 4} duraznos</span>
-            <span className="font-bold text-primary">Total semana: {weeklyData?.totalWeekly || 0}</span>
+            <span>Objetivo diario: {liveWeekly.dailyGoal} duraznos</span>
+            <span className="font-bold text-primary">Total semana: {liveWeekly.totalWeekly}</span>
           </div>
         </div>
       </section>
@@ -136,11 +210,12 @@ const AnalyticsView = ({ refreshTrigger = 0 }) => {
         <div className="flex p-1 bg-surface-container-low rounded-2xl gap-1">
           {months.map((m, idx) => (
             <button
+              type="button"
               key={idx}
               onClick={() => setSelectedMonthIndex(idx)}
-              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all text-center ${selectedMonthIndex === idx
-                  ? 'bg-surface-container-lowest text-primary shadow-xs border border-outline-variant/30'
-                  : 'text-on-surface-variant hover:text-on-surface'
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all text-center ${selectedMonthIndex === idx
+                ? 'bg-surface-container-lowest text-primary shadow-xs border border-outline-variant/30'
+                : 'text-on-surface-variant hover:text-on-surface'
                 }`}
             >
               {m.label.split(' ')[0]}
