@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Calendar, Trash2, Clock, Sparkles } from 'lucide-react';
 import { api } from '../../services/api';
 import { playPopSound } from '../../utils/soundEffects';
 
 const CUT_PEACH_IMAGE = '/assets/durazno-cortado.png';
 
-const HistoryView = ({ onDeleteLog, refreshTrigger = 0 }) => {
-  const [selectedDayOffset, setSelectedDayOffset] = useState(0);
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
+// Caché en memoria por fecha para cambiar de día en el carrusel sin parpadeos
+const historyDayCache = new Map();
 
-  // Generar los últimos 7 días para el carrusel
+const HistoryView = ({ todayLogs = [], onDeleteLog, refreshTrigger = 0 }) => {
+  const [selectedDayOffset, setSelectedDayOffset] = useState(0);
+  const [logs, setLogs] = useState(() => todayLogs);
+  const [loading, setLoading] = useState(false);
+  const activeDateRef = useRef('');
+
+  // Generar los últimos 7 días para el carrusel en hora local del dispositivo
   const days = [];
   const now = new Date();
   const dayNames = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
@@ -33,29 +37,66 @@ const HistoryView = ({ onDeleteLog, refreshTrigger = 0 }) => {
   }
 
   const activeDay = days.find((d) => d.offset === selectedDayOffset) || days[days.length - 1];
+  activeDateRef.current = activeDay.fullDate;
 
+  // Si está parado en HOY, reflejar en tiempo real (0ms) los todayLogs de App.jsx
   useEffect(() => {
-    loadLogs(activeDay.fullDate);
-  }, [selectedDayOffset, refreshTrigger]);
-
-  const loadLogs = async (dateStr) => {
-    setLoading(true);
-    try {
-      const data = await api.getHistoryLogs(dateStr);
-      setLogs(Array.isArray(data) ? data : []);
-    } catch {
-      setLogs([]);
-    } finally {
+    if (selectedDayOffset === 0 && Array.isArray(todayLogs)) {
+      setLogs(todayLogs);
+      historyDayCache.set(activeDay.fullDate, todayLogs);
       setLoading(false);
     }
-  };
+  }, [todayLogs, selectedDayOffset, activeDay.fullDate]);
+
+  // Cargar registros desde la API (en segundo plano si ya hay caché)
+  useEffect(() => {
+    const dateStr = activeDay.fullDate;
+
+    if (selectedDayOffset === 0 && Array.isArray(todayLogs) && todayLogs.length > 0) {
+      setLogs(todayLogs);
+      setLoading(false);
+    } else if (historyDayCache.has(dateStr)) {
+      setLogs(historyDayCache.get(dateStr));
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
+    let isCancelled = false;
+    api
+      .getHistoryLogs(dateStr)
+      .then((data) => {
+        if (isCancelled || activeDateRef.current !== dateStr) return;
+        const list = Array.isArray(data) ? data : [];
+        historyDayCache.set(dateStr, list);
+        setLogs(list);
+      })
+      .catch(() => {
+        if (!isCancelled && !historyDayCache.has(dateStr)) {
+          setLogs([]);
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) setLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedDayOffset, refreshTrigger, activeDay.fullDate]);
 
   const handleDelete = async (id) => {
+    if (!id) return;
     playPopSound(0.8);
-    // 1. Eliminar visualmente del historial de inmediato
-    setLogs((prev) => prev.filter((l) => l._id !== id));
 
-    // 2. Notificar al componente raíz para que actualice la sección de Cosecha en tiempo real
+    // 1. Eliminar visualmente del historial de inmediato (0ms)
+    setLogs((prev) => {
+      const next = prev.filter((l) => l._id !== id);
+      historyDayCache.set(activeDay.fullDate, next);
+      return next;
+    });
+
+    // 2. Notificar al componente raíz para actualizar Cosecha, Racha y Analítica en tiempo real
     if (onDeleteLog) {
       await onDeleteLog(id);
     } else {
@@ -68,7 +109,7 @@ const HistoryView = ({ onDeleteLog, refreshTrigger = 0 }) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Bitácora Diaria</span>
+          <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Bitácora en Vivo</span>
           <h1 className="text-xl font-bold text-on-surface font-display">Historial de Consumo</h1>
         </div>
         <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary shadow-xs">
@@ -83,18 +124,17 @@ const HistoryView = ({ onDeleteLog, refreshTrigger = 0 }) => {
             const isSelected = d.offset === selectedDayOffset;
             return (
               <button
+                type="button"
                 key={d.offset}
                 onClick={() => setSelectedDayOffset(d.offset)}
-                className={`flex flex-col items-center justify-center p-2 rounded-2xl min-w-[50px] transition-all active:scale-95 border ${isSelected
-                  ? 'bg-primary-container text-on-primary-container border-primary font-bold shadow-xs'
-                  : 'bg-surface-container-low border-outline-variant/20 text-on-surface-variant hover:border-primary/40'
+                className={`flex flex-col items-center justify-center p-2 rounded-2xl min-w-[48px] transition-all active:scale-95 border ${isSelected
+                    ? 'bg-primary-container text-on-primary-container border-primary font-bold shadow-xs'
+                    : 'bg-surface-container-low border-outline-variant/20 text-on-surface-variant hover:border-primary/40'
                   }`}
               >
                 <span className="text-[10px] font-semibold">{d.dayName}</span>
                 <span className="text-base font-extrabold my-0.5">{d.dayNumber}</span>
-                {d.isToday && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                )}
+                {d.isToday && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
               </button>
             );
           })}
@@ -113,9 +153,9 @@ const HistoryView = ({ onDeleteLog, refreshTrigger = 0 }) => {
           </span>
         </div>
 
-        {loading ? (
+        {loading && logs.length === 0 ? (
           <div className="p-8 text-center text-xs text-outline font-semibold bg-surface-container-lowest rounded-3xl border border-outline-variant/20">
-            Cargando registros reales desde MongoDB...
+            Sincronizando bitácora...
           </div>
         ) : logs.length === 0 ? (
           <div className="p-8 text-center bg-surface-container-lowest rounded-3xl border border-outline-variant/20 space-y-2">
@@ -131,9 +171,10 @@ const HistoryView = ({ onDeleteLog, refreshTrigger = 0 }) => {
           </div>
         ) : (
           logs.map((log, index) => {
+            const count = log.peachesCount || 1;
             const timeStr = log.date
               ? new Date(log.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : 'Hoy';
+              : 'Ahora';
 
             return (
               <article
@@ -142,7 +183,7 @@ const HistoryView = ({ onDeleteLog, refreshTrigger = 0 }) => {
               >
                 {/* Cabecera */}
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-12 h-12 rounded-xl bg-surface-container-low p-1 flex items-center justify-center shrink-0 border border-outline-variant/20 overflow-hidden">
                       <img
                         alt="Durazno registrado"
@@ -150,30 +191,31 @@ const HistoryView = ({ onDeleteLog, refreshTrigger = 0 }) => {
                         src={CUT_PEACH_IMAGE}
                       />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] font-semibold text-outline flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-primary" />
-                          {timeStr}
+                          <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span>{timeStr}</span>
                         </span>
                       </div>
-                      <h3 className="text-sm font-bold text-on-surface mt-0.5">
-                        {log.peachesCount || 1} {log.peachesCount === 1 ? 'Durazno Fresco' : 'Duraznos Frescos'}
+                      <h3 className="text-sm font-bold text-on-surface mt-0.5 truncate">
+                        {count} {count === 1 ? 'Durazno Fresco' : 'Duraznos Frescos'}
                       </h3>
                     </div>
                   </div>
 
                   {/* Acciones & Botón Eliminar */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <span className="bg-primary-fixed text-primary px-2.5 py-1 rounded-full text-xs font-bold text-center">
-                      {(log.peachesCount || 1) * 150}g
+                      {count * 150}g
                     </span>
                     <button
+                      type="button"
                       onClick={() => handleDelete(log._id)}
                       title="Eliminar de la cosecha"
-                      className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-outline hover:text-primary active:scale-90 transition-all shrink-0"
+                      className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-outline hover:text-primary active:scale-90 transition-all shrink-0"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -182,15 +224,15 @@ const HistoryView = ({ onDeleteLog, refreshTrigger = 0 }) => {
                 <div className="grid grid-cols-3 gap-2 py-2 border-t border-outline-variant/15 text-center bg-surface-container-low/40 rounded-xl px-2">
                   <div>
                     <span className="text-[10px] text-outline block">Calorías</span>
-                    <span className="text-xs font-bold text-primary">{(log.peachesCount || 1) * 63} kcal</span>
+                    <span className="text-xs font-bold text-primary">{count * 63} kcal</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-outline block">Fibra</span>
-                    <span className="text-xs font-bold text-secondary">{+((log.peachesCount || 1) * 2.3).toFixed(1)}g</span>
+                    <span className="text-xs font-bold text-secondary">{+(count * 2.3).toFixed(1)}g</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-outline block">Vit. C</span>
-                    <span className="text-xs font-bold text-tertiary">{Math.min((log.peachesCount || 1) * 17, 100)}%</span>
+                    <span className="text-xs font-bold text-tertiary">{Math.min(count * 17, 100)}%</span>
                   </div>
                 </div>
               </article>
