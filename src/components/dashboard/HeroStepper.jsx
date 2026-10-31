@@ -1,4 +1,3 @@
-import React from 'react';
 import { Plus, Minus, CheckCircle, Sparkles, Leaf } from 'lucide-react';
 import Peach3DCanvas from '../3d/Peach3DCanvas';
 import BentoMacros from './BentoMacros';
@@ -59,8 +58,8 @@ const HeroStepper = ({
 
           <div
             className={`flex items-center gap-1 font-bold text-xs px-2.5 py-0.5 rounded-full transition-colors ${isGoalReached
-                ? 'bg-secondary text-on-secondary shadow-xs'
-                : 'bg-secondary-fixed/50 text-secondary'
+              ? 'bg-secondary text-on-secondary shadow-xs'
+              : 'bg-secondary-fixed/50 text-secondary'
               }`}
           >
             <CheckCircle className="w-3.5 h-3.5" />
@@ -128,9 +127,10 @@ const HeroStepper = ({
         </div>
 
         {/* Botonera Táctil (+1, +2, -1) */}
-        <div className="w-full grid grid-cols-4 gap-2 mt-3">
+        <div className="w-full grid grid-cols-4 gap-2 mt-3 select-none">
           {/* Restar 1 */}
           <button
+            type="button"
             onClick={onDecrement}
             disabled={totalPeaches <= 0}
             aria-label="Restar 1 durazno"
@@ -141,6 +141,7 @@ const HeroStepper = ({
 
           {/* Sumar 1 Principal */}
           <button
+            type="button"
             onClick={() => onIncrement(1)}
             className="col-span-2 h-14 rounded-2xl bg-gradient-to-r from-primary-container to-primary text-on-primary font-bold text-sm flex items-center justify-center gap-2 peach-hero-glow active:scale-95 transition-all"
           >
@@ -150,6 +151,7 @@ const HeroStepper = ({
 
           {/* Acceso Rápido +2 */}
           <button
+            type="button"
             onClick={() => onIncrement(2)}
             className="h-14 rounded-2xl bg-surface-container-low hover:bg-surface-container text-tertiary font-extrabold text-sm flex items-center justify-center border border-outline-variant/25 active:scale-90 transition-all shadow-xs"
           >
