@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Lock, Mail, Eye, EyeOff, LogIn, Sparkles, AlertCircle } from 'lucide-react';
 import { api } from '../../services/api';
 import { playPopSound, playChimeSound } from '../../utils/soundEffects';
@@ -125,14 +125,16 @@ const LoginView = ({ onLoginSuccess }) => {
           <div className="space-y-1">
             <label className="text-xs font-bold text-on-surface block">Correo Electrónico</label>
             <div className="relative flex items-center">
-              <Mail className="absolute left-3 w-4 h-4 text-outline" />
+              <Mail className="absolute left-3.5 w-4 h-4 text-outline pointer-events-none" />
               <input
                 type="email"
                 required
+                autoComplete="email"
+                inputMode="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@correo.com"
-                className="w-full bg-surface-container-low border border-outline-variant/30 rounded-2xl pl-10 pr-3 py-2.5 text-xs text-on-surface focus:outline-primary focus:border-primary transition-all font-medium"
+                className="w-full bg-surface-container-low border border-outline-variant/30 rounded-2xl pl-10 pr-3 py-3 text-base text-on-surface focus:outline-primary focus:border-primary transition-all font-medium"
               />
             </div>
           </div>
@@ -141,19 +143,20 @@ const LoginView = ({ onLoginSuccess }) => {
           <div className="space-y-1">
             <label className="text-xs font-bold text-on-surface block">Contraseña</label>
             <div className="relative flex items-center">
-              <Lock className="absolute left-3 w-4 h-4 text-outline" />
+              <Lock className="absolute left-3.5 w-4 h-4 text-outline pointer-events-none" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Tu contraseña"
-                className="w-full bg-surface-container-low border border-outline-variant/30 rounded-2xl pl-10 pr-10 py-2.5 text-xs text-on-surface focus:outline-primary focus:border-primary transition-all font-medium"
+                className="w-full bg-surface-container-low border border-outline-variant/30 rounded-2xl pl-10 pr-11 py-3 text-base text-on-surface focus:outline-primary focus:border-primary transition-all font-medium"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 text-outline hover:text-on-surface p-1"
+                className="absolute right-3 text-outline hover:text-on-surface p-1.5"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
